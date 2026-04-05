@@ -1,49 +1,214 @@
-# donutbrowser-nix
+# donutbrowser-nixos
 
-Nix flake for [Donut Browser](https://github.com/zhom/donutbrowser) with:
+Nix flake packaging [Donut Browser](https://github.com/zhom/donutbrowser) for `x86_64-linux`.
 
-- Hourly GitHub Actions update checks
-- Automatic update PR creation (latest release tags)
-- Linux build validation in CI
-- Cachix binary cache publishing
+This repository currently exposes:
 
-## Scope
+- `packages.x86_64-linux.{default,donutbrowser}`
+- `apps.x86_64-linux.{default,donutbrowser}`
+- `overlays.default`
 
-- Target platform: `x86_64-linux`
-- Upstream tracking: GitHub release tags from `zhom/donutbrowser`
-- Package source: Linux AppImage asset from upstream releases
+It does not provide a NixOS module or a Home Manager module. For system-wide or
+Home Manager installs, use the package output directly.
 
-## Quick Start
+## Requirements
 
-Run from this repository:
+- Linux on `x86_64`
+- Nix with flakes enabled
+
+Canonical flake reference:
+
+```bash
+github:HassiyYT/donutbrowser-nixos
+```
+
+If you already cloned this repository, replace that reference with `.` in the
+examples below.
+
+## Try Without Installing
+
+Run the packaged app directly:
+
+```bash
+nix run github:HassiyYT/donutbrowser-nixos#donutbrowser
+```
+
+From a local checkout:
 
 ```bash
 nix run .#donutbrowser
 ```
 
-Install into your profile:
+## Install For One User
+
+Install Donut Browser into your current Nix profile:
+
+```bash
+nix profile install github:HassiyYT/donutbrowser-nixos#donutbrowser
+```
+
+From a local checkout:
 
 ```bash
 nix profile install .#donutbrowser
 ```
 
-## Runtime Binary Cleanup Workaround
+The installed executable is:
 
-The wrapper script in `package.nix` protects downloaded browser binaries during
-startup to avoid an upstream cleanup bug that can remove them too early.
+```bash
+donutbrowser
+```
 
-- Default behavior: protect version directories for `8` seconds at startup
-- Override window: set `DONUTBROWSER_STARTUP_PROTECT_SECS=<seconds>`
-- Disable workaround: set `DONUTBROWSER_ALLOW_BINARY_CLEANUP=1`
+## Install System-Wide On NixOS
 
-## Binary Cache (Cachix)
+Add the flake as an input in your system flake:
 
-The flake config already includes:
+```nix
+{
+  inputs.donutbrowser.url = "github:HassiyYT/donutbrowser-nixos";
+}
+```
 
-- Substituter: `https://hassiyyt.cachix.org`
-- Public key: `hassiyyt.cachix.org-1:GPb2J+eS5AyHtVF9zQ+cchuQJl65WrxpcrdYsSiDjno=`
+Then add the package to `environment.systemPackages`:
 
-To configure globally (optional):
+```nix
+{ inputs, pkgs, ... }:
+{
+  environment.systemPackages = [
+    inputs.donutbrowser.packages.${pkgs.system}.donutbrowser
+  ];
+}
+```
+
+### Optional Overlay Style
+
+If you prefer using `pkgs.donutbrowser`, add the overlay first:
+
+```nix
+{ inputs, ... }:
+{
+  nixpkgs.overlays = [ inputs.donutbrowser.overlays.default ];
+}
+```
+
+Then install it as a normal package:
+
+```nix
+{ pkgs, ... }:
+{
+  environment.systemPackages = [ pkgs.donutbrowser ];
+}
+```
+
+## Install With Home Manager
+
+Add the same flake input:
+
+```nix
+{
+  inputs.donutbrowser.url = "github:HassiyYT/donutbrowser-nixos";
+}
+```
+
+Then add the package to `home.packages`:
+
+```nix
+{ inputs, pkgs, ... }:
+{
+  home.packages = [
+    inputs.donutbrowser.packages.${pkgs.system}.donutbrowser
+  ];
+}
+```
+
+### Optional Overlay Style
+
+If you already use overlays in Home Manager:
+
+```nix
+{ inputs, ... }:
+{
+  nixpkgs.overlays = [ inputs.donutbrowser.overlays.default ];
+}
+```
+
+Then:
+
+```nix
+{ pkgs, ... }:
+{
+  home.packages = [ pkgs.donutbrowser ];
+}
+```
+
+## Wayland And X11
+
+The package wrapper is tuned for Wayland by default.
+
+On startup it sets:
+
+- `MOZ_ENABLE_WAYLAND=1` if unset
+- `GDK_BACKEND=wayland,x11` if unset
+- `XDG_SESSION_TYPE=wayland` if unset
+
+If `WAYLAND_DISPLAY` is unset but `XDG_RUNTIME_DIR` contains a Wayland socket,
+the wrapper will pick one automatically.
+
+### Wayland Users
+
+For Wayland sessions, the default `donutbrowser` launch path is the recommended
+configuration. The wrapper also removes stale bundled Wayland libraries from the
+AppImage payload and preloads Nixpkgs Wayland libraries to avoid known crashes
+with some Hyprland and Firefox combinations.
+
+### X11 Users
+
+X11 is supported too. In a normal X11 desktop session, your session usually
+already exports `XDG_SESSION_TYPE=x11`, so `donutbrowser` should just start.
+
+If you want to force X11 explicitly, launch it like this:
+
+```bash
+env \
+  GDK_BACKEND=x11 \
+  MOZ_ENABLE_WAYLAND=0 \
+  XDG_SESSION_TYPE=x11 \
+  DONUTBROWSER_DISABLE_WAYLAND_PRELOAD=1 \
+  donutbrowser
+```
+
+## Troubleshooting And Runtime Knobs
+
+### Startup Binary Cleanup Workaround
+
+The wrapper protects downloaded browser binaries during startup to avoid an
+upstream cleanup bug that can remove them too early.
+
+- Default protection window: `8` seconds
+- Change the window: `DONUTBROWSER_STARTUP_PROTECT_SECS=<seconds>`
+- Disable the workaround entirely: `DONUTBROWSER_ALLOW_BINARY_CLEANUP=1`
+
+### Wayland Library Preload
+
+By default, the wrapper preloads Nixpkgs `libwayland-client` and
+`libwayland-cursor` to avoid crashes caused by stale bundled libraries.
+
+Disable that preload only if you need to debug or work around a local graphics
+stack issue:
+
+```bash
+DONUTBROWSER_DISABLE_WAYLAND_PRELOAD=1 donutbrowser
+```
+
+## Binary Cache
+
+The flake already declares the project's Cachix cache:
+
+- `https://hassiyyt.cachix.org`
+- `hassiyyt.cachix.org-1:GPb2J+eS5AyHtVF9zQ+cchuQJl65WrxpcrdYsSiDjno=`
+
+If you want to trust it globally instead of relying on per-flake `nixConfig`,
+add this to your NixOS configuration or equivalent Nix settings:
 
 ```nix
 {
@@ -56,51 +221,31 @@ To configure globally (optional):
 }
 ```
 
-## Automation Workflows
+## Maintainer Notes
 
-- `.github/workflows/update-donutbrowser.yml`
-  - Runs hourly (`0 * * * *`)
-  - Checks latest release tag
-  - Updates `package.nix` version/asset/hash
-  - Creates PR and enables auto-merge
-- `.github/workflows/build.yml`
-  - Builds package on push/PR and after updater completion
-  - Pushes build outputs to Cachix on `main`
-- `.github/workflows/test-pr.yml`
-  - Validates PRs that modify package/flake/workflow files
-- `.github/workflows/create-version-tag.yml`
-  - Creates version and moving tags after successful main build
+Build exactly what CI builds:
 
-## Required Repository Setup
+```bash
+nix build .#donutbrowser --print-build-logs
+```
 
-See `.github/REPOSITORY_SETTINGS.md`.
+Smoke-test the packaged binary after a build:
 
-Required secret:
+```bash
+./result/bin/donutbrowser --version >/dev/null 2>&1 || true
+```
 
-- `CACHIX_AUTH_TOKEN`
-
-Required GitHub settings:
-
-- Actions workflow permissions: read/write
-- Allow Actions to create/approve PRs
-- Enable auto-merge
-
-## Manual Update
-
-Check for updates only:
+Check for a newer upstream release:
 
 ```bash
 ./scripts/update-version.sh --check
 ```
 
-Apply latest release update:
+Pin to a specific upstream release:
 
 ```bash
-./scripts/update-version.sh
+./scripts/update-version.sh --version 0.19.0
 ```
 
-Update to a specific release:
-
-```bash
-./scripts/update-version.sh --version 0.13.9
-```
+Repository automation setup and required GitHub settings are documented in
+[`./.github/REPOSITORY_SETTINGS.md`](./.github/REPOSITORY_SETTINGS.md).
