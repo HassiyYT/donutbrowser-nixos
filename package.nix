@@ -9,14 +9,14 @@
 
 let
   pname = "donutbrowser";
-  version = "0.24.2";
+  version = "0.24.3";
 
   # Updated automatically by scripts/update-version.sh
-  assetName = "Donut_0.24.2_amd64.AppImage";
+  assetName = "Donut_0.24.3_amd64.AppImage";
 
   src = fetchurl {
     url = "https://github.com/zhom/donutbrowser/releases/download/v${version}/${assetName}";
-    hash = "sha256-140PSB/1BLGUB4sI/RgfYe7uUjwRFWXtdSnUZz6Wr0U=";
+    hash = "sha256-4RXEpNiD10hhZhBJ96lhvRG+K6ZrsEF+atwfkAicnhc=";
   };
 
   appimageContents = appimageTools.extractType2 {
