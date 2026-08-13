@@ -19,7 +19,7 @@ Home Manager installs, use the package output directly.
 Canonical flake reference:
 
 ```bash
-github:HassiyYT/donutbrowser-nixos
+github:kalinichaa/donutbrowser-nixos
 ```
 
 If you already cloned this repository, replace that reference with `.` in the
@@ -30,7 +30,7 @@ examples below.
 Run the packaged app directly:
 
 ```bash
-nix run github:HassiyYT/donutbrowser-nixos#donutbrowser
+nix run github:kalinichaa/donutbrowser-nixos#donutbrowser
 ```
 
 From a local checkout:
@@ -44,7 +44,7 @@ nix run .#donutbrowser
 Install Donut Browser into your current Nix profile:
 
 ```bash
-nix profile install github:HassiyYT/donutbrowser-nixos#donutbrowser
+nix profile install github:kalinichaa/donutbrowser-nixos#donutbrowser
 ```
 
 From a local checkout:
@@ -65,7 +65,7 @@ Add the flake as an input in your system flake:
 
 ```nix
 {
-  inputs.donutbrowser.url = "github:HassiyYT/donutbrowser-nixos";
+  inputs.donutbrowser.url = "github:kalinichaa/donutbrowser-nixos";
 }
 ```
 
@@ -106,7 +106,7 @@ Add the same flake input:
 
 ```nix
 {
-  inputs.donutbrowser.url = "github:HassiyYT/donutbrowser-nixos";
+  inputs.donutbrowser.url = "github:kalinichaa/donutbrowser-nixos";
 }
 ```
 
